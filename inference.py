@@ -55,9 +55,7 @@ def main(config, args):
         audio_feat_length=config.data.audio_feat_length,
     )
 
-    model_path = Path("checkpoints/stabilityai/sd-vae-ft-mse").absolute().as_posix()
-    print(f"model path: {model_path}")
-    vae = AutoencoderKL.from_pretrained(model_path, torch_dtype=dtype)
+    vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=dtype)
     vae.config.scaling_factor = 0.18215
     vae.config.shift_factor = 0
 
@@ -99,9 +97,12 @@ def main(config, args):
 
 
 if __name__ == "__main__":
+    CONFIG_PATH = Path("LatentSync/configs/unet/stage2.yaml")
+    CHECKPOINT_PATH = Path("checkpoints/latentsync_unet.pt")
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--unet_config_path", type=str, default="LatentSync/configs/unet/stage2.yaml")
-    parser.add_argument("--inference_ckpt_path", type=str, required=True)
+    parser.add_argument("--unet_config_path", type=str, default=CONFIG_PATH.absolute().as_posix())
+    parser.add_argument("--inference_ckpt_path", type=str, default=CHECKPOINT_PATH.absolute().as_posix())
     parser.add_argument("--video_path", type=str, required=True)
     parser.add_argument("--audio_path", type=str, required=True)
     parser.add_argument("--mask_image_path", type=str, default="LatentSync/latentsync/utils/mask.png")

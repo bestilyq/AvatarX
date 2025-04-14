@@ -527,7 +527,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
             out.release()
 
             # 合并音频
-            command = f"ffmpeg -y -loglevel error -nostdin -i {temp_video_path} -i {audio_path} -c:v libx264 -c:a aac -q:v 0 -q:a 0 {video_out_path}"
+            command = f"ffmpeg -y -loglevel error -nostdin -i {temp_video_path} -i {audio_path} -c:v libx264 -crf 18 -c:a aac -q:v 0 -q:a 0 {video_out_path}"
             subprocess.run(command, shell=True)
 
             # 删除临时文件

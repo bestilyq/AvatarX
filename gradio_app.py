@@ -6,7 +6,7 @@ from datetime import datetime
 
 import inference
 
-CONFIG_PATH = Path("configs/unet/stage2.yaml")
+CONFIG_PATH = Path("LatentSync/configs/unet/stage2.yaml")
 CHECKPOINT_PATH = Path("checkpoints/latentsync_unet.pt")
 
 
@@ -61,6 +61,7 @@ def create_args(
     parser.add_argument("--inference_ckpt_path", type=str, required=True)
     parser.add_argument("--video_path", type=str, required=True)
     parser.add_argument("--audio_path", type=str, required=True)
+    parser.add_argument("--mask_image_path", type=str, required=True)
     parser.add_argument("--video_out_path", type=str, required=True)
     parser.add_argument("--inference_steps", type=int, default=20)
     parser.add_argument("--guidance_scale", type=float, default=1.0)
@@ -74,6 +75,8 @@ def create_args(
             video_path,
             "--audio_path",
             audio_path,
+            "--mask_image_path",
+            "LatentSync/latentsync/utils/mask.png",
             "--video_out_path",
             output_path,
             "--inference_steps",

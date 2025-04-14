@@ -94,16 +94,17 @@ def main(config, args):
         weight_dtype=dtype,
         width=config.data.resolution,
         height=config.data.resolution,
-        mask_image_path=config.data.mask_image_path,
+        mask_image_path=args.mask_image_path,
     )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--unet_config_path", type=str, default="configs/unet.yaml")
+    parser.add_argument("--unet_config_path", type=str, default="LatentSync/configs/unet/stage2.yaml")
     parser.add_argument("--inference_ckpt_path", type=str, required=True)
     parser.add_argument("--video_path", type=str, required=True)
     parser.add_argument("--audio_path", type=str, required=True)
+    parser.add_argument("--mask_image_path", type=str, default="LatentSync/latentsync/utils/mask.png")
     parser.add_argument("--video_out_path", type=str, required=True)
     parser.add_argument("--inference_steps", type=int, default=20)
     parser.add_argument("--guidance_scale", type=float, default=1.0)
@@ -111,5 +112,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = OmegaConf.load(args.unet_config_path)
+    config["run"].update(
+        {
+            "guidance_scale": args.guidance_scale,
+            "inference_steps": args.inference_steps,
+        }
+    )
 
     main(config, args)

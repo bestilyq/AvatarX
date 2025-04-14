@@ -103,6 +103,7 @@ with gr.Blocks(title="LatentSync demo") as demo:
             <img src='https://img.shields.io/badge/arXiv-Paper-red'>
         </a>
     </div>
+    <style> video { max-height: 500px; } </style>
     """
     )
 

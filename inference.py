@@ -39,7 +39,7 @@ def main(config, args):
     print(f"Input audio path: {args.audio_path}")
     print(f"Loaded checkpoint path: {args.inference_ckpt_path}")
 
-    scheduler = DDIMScheduler.from_pretrained("configs")
+    scheduler = DDIMScheduler.from_pretrained("LatentSync/configs")
 
     if config.model.cross_attention_dim == 768:
         whisper_model_path = "checkpoints/whisper/small.pt"
@@ -48,6 +48,9 @@ def main(config, args):
     else:
         raise NotImplementedError("cross_attention_dim must be 768 or 384")
 
+    whisper_model_path = Path(whisper_model_path).absolute().as_posix()
+    print(f"Whisper model path: {whisper_model_path}")
+    
     audio_encoder = Audio2Feature(
         model_path=whisper_model_path,
         device="cuda",

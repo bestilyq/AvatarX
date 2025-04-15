@@ -421,7 +421,6 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
             return len(frames) > 0, np.array(frames)
 
         with tqdm.tqdm(total=total_frames, desc="Processing video") as pbar:
-            print("start loop")
             # 开始按num_frames分组处理视频
             processed_frames = 0
             while processed_frames < total_frames:
@@ -432,11 +431,9 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                 # 对齐变换
                 faces, boxes, affine_matrices = self.affine_transform_video(video_frames)
 
-                print("processing current batch")
                 curr_batch_size = len(video_frames)
 
                 # 准备音频特征
-                print("prepare audio embeds")
                 if self.denoising_unet.add_audio_layer:
                     curr_audio_embeds = torch.stack(whisper_chunks[processed_frames : processed_frames + curr_batch_size])
                     curr_audio_embeds = curr_audio_embeds.to(device, dtype=weight_dtype)
@@ -447,7 +444,6 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     curr_audio_embeds = None
                     
                 # 处理当前批次
-                print("prepare latents")
                 latents = self.prepare_latents(
                     1,
                     curr_batch_size,
@@ -458,11 +454,11 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     device,
                     generator
                 )
-                print("prepare masks and masked images")
+                
                 pixel_values, masked_pixel_values, masks = self.image_processor.prepare_masks_and_masked_images(
                     faces, affine_transform=False
                 )
-                print("prepare mask latents")
+                
                 mask_latents, masked_image_latents = self.prepare_mask_latents(
                     masks,
                     masked_pixel_values,
@@ -473,7 +469,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     generator,
                     do_classifier_free_guidance
                 )
-                print("prepare image latents")
+                
                 image_latents = self.prepare_image_latents(
                     pixel_values,
                     device,
@@ -483,7 +479,6 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                 )
 
                 # 执行diffusion步骤
-                print("diffusion")
                 for t in timesteps:
                     latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                     latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
@@ -500,14 +495,12 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
                 
                 # 解码生成的latents
-                print("decode latents")
                 decoded_latents = self.decode_latents(latents)
                 decoded_latents = self.paste_surrounding_pixels_back(
                     decoded_latents, pixel_values, 1 - masks, device, weight_dtype
                 )
 
                 # 恢复并写入生成的帧
-                print("resore frame")
                 for i in range(curr_batch_size):
                     restored_frame = self.restore_frame(
                         decoded_latents[i],
@@ -518,7 +511,6 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     out.write(restored_frame)
 
                 # 更新进度
-                print("update progress bar")
                 processed_frames += curr_batch_size
                 pbar.update(curr_batch_size)
 

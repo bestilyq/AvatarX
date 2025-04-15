@@ -256,7 +256,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
         faces = []
         boxes = []
         affine_matrices = []
-        print(f"Affine transforming {len(video_frames)} faces...")
+        # print(f"Affine transforming {len(video_frames)} faces...")
         # for frame in tqdm.tqdm(video_frames):
         for frame in video_frames:
             face, box, affine_matrix = self.image_processor.affine_transform(frame)

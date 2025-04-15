@@ -411,9 +411,9 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
         temp_video_path = os.path.join(os.path.dirname(video_out_path), "temp.mp4")
         out = cv2.VideoWriter(temp_video_path, fourcc, video_fps, (frame_width, frame_height))
 
-        def read_video(num_frames: int):
+        def read_video(count: int):
             frames = []
-            for _ in range(num_frames):
+            for _ in range(count):
                 success, frame = cap.read()
                 if not success:
                     break
@@ -424,7 +424,8 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
             # 开始按num_frames分组处理视频
             processed_frames = 0
             while processed_frames < total_frames:
-                success, video_frames = read_video(num_frames)
+                count = min(total_frames - processed_frames, num_frames)
+                success, video_frames = read_video(count)
                 if not success:
                     break
 

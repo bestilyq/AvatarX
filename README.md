@@ -1,6 +1,11 @@
 # LatentSync
 Custom Latentsync from bytedance/Latentsync
 
+## 下载代码
+```shell
+git clone --recursive https://github.com/bestilyq/LatentSync.git
+```
+
 ## 使用国内hugging face镜像，设置 HF_ENDPOINT 环境变量
 ### Linux/Mac OS
 ```shell
@@ -29,3 +34,24 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 ```
 >*注意：*os.environ得在import huggingface库相关语句之前执行。
 
+## 下载模型文件
+### 下载hfd
+```shell
+wget https://hf-mirror.com/hfd/hfd.sh
+chmod a+x hfd.sh
+```
+
+### 安装hfd依赖
+#### Linux
+```shell
+sudo apt install -y aria2 jq
+```
+#### Windows
+```shell
+choco install aria2 jq
+```
+
+### 下载模型
+```shell
+./hfd.sh ByteDance/LatentSync-1.5 --local-dir checkpoints
+```

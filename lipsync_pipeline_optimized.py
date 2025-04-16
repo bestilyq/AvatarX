@@ -417,6 +417,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                 success, frame = cap.read()
                 if not success:
                     break
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(frame)
             return len(frames) > 0, np.array(frames)
 
@@ -503,13 +504,14 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
 
                 # 恢复并写入生成的帧
                 for i in range(curr_batch_size):
-                    restored_frame = self.restore_frame(
+                    frame = self.restore_frame(
                         decoded_latents[i],
                         video_frames[i],
                         boxes[i],
                         affine_matrices[i]
                     )
-                    out.write(restored_frame)
+                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    out.write(frame)
 
                 # 更新进度
                 processed_frames += curr_batch_size

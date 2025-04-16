@@ -6,6 +6,7 @@ __pycache__/
 .gradio/
 checkpoints/
 temp/
+hfd.sh
 
 # C extensions
 *.so

@@ -17,12 +17,12 @@ else
     sudo apt -y install libgl1
 fi
 
-# Check if huggingface-cli is installed, if not install it
-if ! command -v huggingface-cli &> /dev/null; then
-    echo "huggingface-cli not found, installing..."
-    pip install huggingface_hub[cli]
-fi
+# # Check if huggingface-cli is installed, if not install it
+# if ! command -v huggingface-cli &> /dev/null; then
+#     echo "huggingface-cli not found, installing..."
+#     pip install huggingface_hub[cli]
+# fi
 
-# Download the checkpoints required for inference from HuggingFace
-huggingface-cli download ByteDance/LatentSync-1.5 whisper/tiny.pt --local-dir checkpoints
-huggingface-cli download ByteDance/LatentSync-1.5 latentsync_unet.pt --local-dir checkpoints
+# # Download the checkpoints required for inference from HuggingFace
+# huggingface-cli download ByteDance/LatentSync-1.5 whisper/tiny.pt --local-dir checkpoints
+# huggingface-cli download ByteDance/LatentSync-1.5 latentsync_unet.pt --local-dir checkpoints

@@ -344,7 +344,6 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
         guidance_scale: float = 1.5,
         weight_dtype: Optional[torch.dtype] = torch.float16,
         eta: float = 0.0,
-        mask: str = "fix_mask",
         mask_image_path: str = "latentsync/utils/mask.png",
         generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
         callback: Optional[Callable[[int, int, torch.FloatTensor], None]] = None,
@@ -360,7 +359,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
         batch_size = 1
         device = self._execution_device
         mask_image = load_fixed_mask(height, mask_image_path)
-        self.image_processor = ImageProcessor(height, mask=mask, device="cuda", mask_image=mask_image)
+        self.image_processor = ImageProcessor(height, device="cuda", mask_image=mask_image)
         self.set_progress_bar_config(desc=f"Sample frames: {num_frames}")
 
         # 1. Default height and width to unet
@@ -401,9 +400,8 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
             print(f"Warning: Total frames({total_frames}) is less than batch size({num_frames})")
             num_frames = total_frames
 
-        # 设置输出视频编码器
+        # 创建临时视频文件存储处理后的帧
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        # 创建临时视频文件用于存储
         temp_video_path = os.path.join(os.path.dirname(video_out_path), "temp.mp4")
         out = cv2.VideoWriter(temp_video_path, fourcc, video_fps, (frame_width, frame_height))
 
@@ -481,17 +479,18 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                 # 9. Denoising loop
                 for t in timesteps:
                     # expand the latents if we are doing classifier free guidance
-                    latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
-                    latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+                    denoising_unet_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
+
+                    denoising_unet_input = self.scheduler.scale_model_input(denoising_unet_input, t)
 
                     # concat latents, mask, masked_image_latents in the channel dimension
-                    latent_model_input = torch.cat(
-                        [latent_model_input, mask_latents, masked_image_latents, image_latents], dim=1
+                    denoising_unet_input = torch.cat(
+                        [denoising_unet_input, mask_latents, masked_image_latents, image_latents], dim=1
                     )
 
                     # predict the noise residual
                     noise_pred = self.denoising_unet(
-                        latent_model_input, t, encoder_hidden_states=audio_embeds
+                        denoising_unet_input, t, encoder_hidden_states=audio_embeds
                     ).sample
 
                     # perform guidance

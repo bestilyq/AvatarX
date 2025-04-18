@@ -1,3 +1,4 @@
 [submodule "LatentSync"]
 	path = LatentSync
 	url = https://github.com/bytedance/LatentSync.git
+	branch = main

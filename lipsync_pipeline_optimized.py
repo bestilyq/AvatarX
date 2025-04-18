@@ -356,14 +356,6 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
 
         check_ffmpeg_installed()
 
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            raise ValueError(f"无法打开文件： {video_path}")
-
-        video_frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
         # 0. Define call parameters
         batch_size = 1
         device = self._execution_device
@@ -391,16 +383,20 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
         num_channels_latents = self.vae.config.latent_channels
 
-        if self.denoising_unet.add_audio_layer:
-            whisper_feature = self.audio_encoder.audio2feat(audio_path)
-            whisper_chunks = self.audio_encoder.feature2chunks(feature_array=whisper_feature, fps=video_fps)
-            audio_frame_count = len(whisper_chunks) # 音频对应的帧数
-        else:
-            audio_frame_count = video_frame_count
-            whisper_chunks = None
+        whisper_feature = self.audio_encoder.audio2feat(audio_path)
+        whisper_chunks = self.audio_encoder.feature2chunks(feature_array=whisper_feature, fps=video_fps)
+
+        # 视频文件读取
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise ValueError(f"无法打开文件： {video_path}")
+
+        video_frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # 取视频和音频帧的最小值作为实际处理帧数
-        total_frames = min(video_frame_count, audio_frame_count)
+        total_frames = min(video_frame_count, len(whisper_chunks))
         if total_frames < num_frames:
             print(f"Warning: Total frames({total_frames}) is less than batch size({num_frames})")
             num_frames = total_frames
@@ -411,6 +407,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
         temp_video_path = os.path.join(os.path.dirname(video_out_path), "temp.mp4")
         out = cv2.VideoWriter(temp_video_path, fourcc, video_fps, (frame_width, frame_height))
 
+        # 读取指定帧数的视频
         def read_video(count: int):
             frames = []
             for _ in range(count):
@@ -422,7 +419,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
             return len(frames) > 0, np.array(frames)
 
         with tqdm.tqdm(total=total_frames, desc="Processing video") as pbar:
-            # 开始按num_frames分组处理视频
+            # 按num_frames分组处理视频
             processed_frames = 0
             while processed_frames < total_frames:
                 count = min(total_frames - processed_frames, num_frames)
@@ -430,25 +427,23 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                 if not success:
                     break
 
-                # 对齐变换
                 faces, boxes, affine_matrices = self.affine_transform_video(video_frames)
 
-                curr_batch_size = len(video_frames)
+                processing_frames = len(video_frames)
 
-                # 准备音频特征
                 if self.denoising_unet.add_audio_layer:
-                    curr_audio_embeds = torch.stack(whisper_chunks[processed_frames : processed_frames + curr_batch_size])
-                    curr_audio_embeds = curr_audio_embeds.to(device, dtype=weight_dtype)
+                    audio_embeds = torch.stack(whisper_chunks[processed_frames : processed_frames + processing_frames])
+                    audio_embeds = audio_embeds.to(device, dtype=weight_dtype)
                     if do_classifier_free_guidance:
-                        empty_audio_embeds = torch.zeros_like(curr_audio_embeds)
-                        curr_audio_embeds = torch.cat([empty_audio_embeds, curr_audio_embeds])
+                        null_audio_embeds = torch.zeros_like(audio_embeds)
+                        audio_embeds = torch.cat([null_audio_embeds, audio_embeds])
                 else:
-                    curr_audio_embeds = None
+                    audio_embeds = None
                     
-                # 处理当前批次
+                # 5. Prepare latent variables
                 latents = self.prepare_latents(
-                    1,
-                    curr_batch_size,
+                    batch_size,
+                    processing_frames,
                     num_channels_latents,
                     height,
                     width,
@@ -457,10 +452,12 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     generator
                 )
                 
+                # 6. Prepare msked images
                 pixel_values, masked_pixel_values, masks = self.image_processor.prepare_masks_and_masked_images(
                     faces, affine_transform=False
                 )
                 
+                # 7. Prepare mask latent variables
                 mask_latents, masked_image_latents = self.prepare_mask_latents(
                     masks,
                     masked_pixel_values,
@@ -472,6 +469,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     do_classifier_free_guidance
                 )
                 
+                # 8. Prepare image latents
                 image_latents = self.prepare_image_latents(
                     pixel_values,
                     device,
@@ -480,30 +478,38 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     do_classifier_free_guidance
                 )
 
-                # 执行diffusion步骤
+                # 9. Denoising loop
                 for t in timesteps:
+                    # expand the latents if we are doing classifier free guidance
                     latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                     latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+
+                    # concat latents, mask, masked_image_latents in the channel dimension
                     latent_model_input = torch.cat(
                         [latent_model_input, mask_latents, masked_image_latents, image_latents], dim=1
                     )
 
-                    noise_pred = self.denoising_unet(latent_model_input, t, encoder_hidden_states=curr_audio_embeds).sample
+                    # predict the noise residual
+                    noise_pred = self.denoising_unet(
+                        latent_model_input, t, encoder_hidden_states=audio_embeds
+                    ).sample
 
+                    # perform guidance
                     if do_classifier_free_guidance:
                         noise_pred_uncond, noise_pred_audio = noise_pred.chunk(2)
                         noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_audio - noise_pred_uncond)
 
+                    # compute the previous noisy sample x_t -> x_t-1
                     latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
                 
-                # 解码生成的latents
+                # Recover the pixel values
                 decoded_latents = self.decode_latents(latents)
                 decoded_latents = self.paste_surrounding_pixels_back(
                     decoded_latents, pixel_values, 1 - masks, device, weight_dtype
                 )
 
                 # 恢复并写入生成的帧
-                for i in range(curr_batch_size):
+                for i in range(processing_frames):
                     frame = self.restore_frame(
                         decoded_latents[i],
                         video_frames[i],
@@ -514,8 +520,8 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
                     out.write(frame)
 
                 # 更新进度
-                processed_frames += curr_batch_size
-                pbar.update(curr_batch_size)
+                processed_frames += processing_frames
+                pbar.update(processing_frames)
 
             # 清理资源
             cap.release()
@@ -529,8 +535,9 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
             if os.path.exists(temp_video_path):
                 os.remove(temp_video_path)
 
-
-
+        # reset to training if need
+        if is_train:
+            self.denoising_unet.train()
 
 
         # audio_samples = read_audio(audio_path)

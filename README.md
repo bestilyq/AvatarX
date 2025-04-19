@@ -45,6 +45,10 @@ source setup_env.sh
 export PYTHONPATH=$PYTHONPATH:./LatentSync
 python gradio_app.py
 ```
+或者
+```bash
+./launch.sh
+```
 
 ### 如果创建共享链接失败则执行下面命令后再运行gradio程序
 ```bash

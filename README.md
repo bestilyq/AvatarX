@@ -42,6 +42,7 @@ source setup_env.sh
 ```
 ### 运行gradio主程序
 ```bash
+export PYTHONPATH=$PYTHONPATH:./LatentSync
 python gradio_app.py
 ```
 

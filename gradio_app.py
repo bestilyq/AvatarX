@@ -43,7 +43,7 @@ def process_video(
     audio_path = Path(audio_path).absolute().as_posix()
 
     # Creat temporary video file
-    temp_video_path = str(output_dir / f"{video_file_path.stem}_temp.mp4")
+    temp_video_path = video_file_path.with_stem(video_file_path.stem + "_temp").absolute().as_posix()
     loop_video(audio_path, video_path, temp_video_path)
 
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")

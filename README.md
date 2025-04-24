@@ -1,12 +1,6 @@
 # LatentSync
 Custom Latentsync from bytedance/Latentsync
 
-## 0、环境配置
-Cloud Studio中免费基础型GPU空间需手动配置代理，其他空间无需配置
-```bash
-source set_proxy.sh
-```
-
 ## 1、下载代码
 ```bash
 git clone --recursive https://github.com/bestilyq/LatentSync.git
@@ -50,7 +44,7 @@ python gradio_app.py
 ./launch.sh
 ```
 
-### 如果创建共享链接失败则执行下面命令后再运行gradio程序
+### *如果创建共享链接失败则执行下面命令后再运行gradio程序*
 ```bash
 wget https://cdn-media.huggingface.co/frpc-gradio-0.3/frpc_linux_amd64 -O ~/.cache/huggingface/gradio/frpc/frpc_linux_amd64_v0.3
 chmod +x ~/.cache/huggingface/gradio/frpc/frpc_linux_amd64_v0.3

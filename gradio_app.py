@@ -6,8 +6,11 @@ from datetime import datetime
 
 import inference
 
-CONFIG_PATH = Path("LatentSync/configs/unet/stage2.yaml")
+SUBMODULES_PATH = Path("submodules")
+CONFIGS_PATH = Path(SUBMODULES_PATH, "LatentSync/configs")
+UNET_CONFIG_PATH = Path(CONFIGS_PATH, "unet/stage2.yaml")
 CHECKPOINT_PATH = Path("checkpoints/latentsync_unet.pt")
+MASK_IMAGE_PATH = Path(SUBMODULES_PATH, "LatentSync/latentsync/utils/mask.png")
 
 
 def process_video(
@@ -30,7 +33,7 @@ def process_video(
     # Set the output path for the processed video
     output_path = str(output_dir / f"{video_file_path.stem}_{current_time}.mp4")  # Change the filename as needed
 
-    config = OmegaConf.load(CONFIG_PATH)
+    config = OmegaConf.load(UNET_CONFIG_PATH)
 
     config["run"].update(
         {
@@ -58,6 +61,7 @@ def create_args(
     video_path: str, audio_path: str, output_path: str, inference_steps: int, guidance_scale: float, seed: int
 ) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--configs_path", type=str, required=True)
     parser.add_argument("--inference_ckpt_path", type=str, required=True)
     parser.add_argument("--video_path", type=str, required=True)
     parser.add_argument("--audio_path", type=str, required=True)
@@ -69,6 +73,8 @@ def create_args(
 
     return parser.parse_args(
         [
+            "--configs_path",
+            CONFIGS_PATH.absolute().as_posix(),
             "--inference_ckpt_path",
             CHECKPOINT_PATH.absolute().as_posix(),
             "--video_path",
@@ -76,7 +82,7 @@ def create_args(
             "--audio_path",
             audio_path,
             "--mask_image_path",
-            "LatentSync/latentsync/utils/mask.png",
+            MASK_IMAGE_PATH.absolute().as_posix(),
             "--video_out_path",
             output_path,
             "--inference_steps",

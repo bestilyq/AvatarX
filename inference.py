@@ -19,8 +19,8 @@ from omegaconf import OmegaConf
 import torch
 from diffusers import AutoencoderKL, DDIMScheduler
 from accelerate.utils import set_seed
-from LatentSync.latentsync.models.unet import UNet3DConditionModel
-from LatentSync.latentsync.whisper.audio2feature import Audio2Feature
+from latentsync.models.unet import UNet3DConditionModel
+from latentsync.whisper.audio2feature import Audio2Feature
 
 from lipsync_pipeline_optimized import LipsyncPipelineOptimized
 
@@ -39,7 +39,7 @@ def main(config, args):
     print(f"Input audio path: {args.audio_path}")
     print(f"Loaded checkpoint path: {args.inference_ckpt_path}")
 
-    scheduler = DDIMScheduler.from_pretrained("LatentSync/configs")
+    scheduler = DDIMScheduler.from_pretrained(args.configs_path)
 
     if config.model.cross_attention_dim == 768:
         whisper_model_path = "checkpoints/whisper/small.pt"
@@ -100,15 +100,19 @@ def main(config, args):
 
 
 if __name__ == "__main__":
-    CONFIG_PATH = Path("LatentSync/configs/unet/stage2.yaml")
+    SUBMODULES_PATH = Path("submodules")
+    CONFIGS_PATH = Path(SUBMODULES_PATH, "LatentSync/configs")
+    UNET_CONFIG_PATH = Path(CONFIGS_PATH, "unet/stage2.yaml")
     CHECKPOINT_PATH = Path("checkpoints/latentsync_unet.pt")
+    MASK_IMAGE_PATH = Path(SUBMODULES_PATH, "LatentSync/latentsync/utils/mask.png")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--unet_config_path", type=str, default=CONFIG_PATH.absolute().as_posix())
+    parser.add_argument("--configs_path", type=str, default=CONFIGS_PATH.absolute().as_posix())
+    parser.add_argument("--unet_config_path", type=str, default=UNET_CONFIG_PATH.absolute().as_posix())
     parser.add_argument("--inference_ckpt_path", type=str, default=CHECKPOINT_PATH.absolute().as_posix())
     parser.add_argument("--video_path", type=str, required=True)
     parser.add_argument("--audio_path", type=str, required=True)
-    parser.add_argument("--mask_image_path", type=str, default="LatentSync/latentsync/utils/mask.png")
+    parser.add_argument("--mask_image_path", type=str, default=MASK_IMAGE_PATH.absolute().as_posix())
     parser.add_argument("--video_out_path", type=str, required=True)
     parser.add_argument("--inference_steps", type=int, default=20)
     parser.add_argument("--guidance_scale", type=float, default=1.0)

@@ -29,12 +29,12 @@ from diffusers.utils import deprecate, logging
 from einops import rearrange
 import cv2
 
-from LatentSync.latentsync.whisper import whisper
+from latentsync.whisper import whisper
 
-from LatentSync.latentsync.models.unet import UNet3DConditionModel
-from LatentSync.latentsync.utils.util import check_ffmpeg_installed
-from LatentSync.latentsync.utils.image_processor import ImageProcessor, load_fixed_mask
-from LatentSync.latentsync.whisper.audio2feature import Audio2Feature
+from latentsync.models.unet import UNet3DConditionModel
+from latentsync.utils.util import check_ffmpeg_installed
+from latentsync.utils.image_processor import ImageProcessor, load_fixed_mask
+from latentsync.whisper.audio2feature import Audio2Feature
 import tqdm
 import soundfile as sf
 

@@ -13,6 +13,18 @@ CHECKPOINT_PATH = Path("checkpoints/latentsync_unet.pt")
 MASK_IMAGE_PATH = Path(SUBMODULES_PATH, "LatentSync/latentsync/utils/mask.png")
 
 
+# Define the function that will be executed when the button is pressed
+def measure_time(func):
+    import time
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"运行时间: {end_time - start_time:.2f} 秒")
+        return result
+    return wrapper
+
+@measure_time
 def process_video(
     video_path,
     audio_path,

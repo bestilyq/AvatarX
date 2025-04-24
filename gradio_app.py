@@ -5,6 +5,7 @@ import argparse
 from datetime import datetime
 
 import inference
+from util import loop_video
 
 SUBMODULES_PATH = Path("submodules")
 CONFIGS_PATH = Path(SUBMODULES_PATH, "LatentSync/configs")
@@ -41,6 +42,10 @@ def process_video(
     video_path = video_file_path.absolute().as_posix()
     audio_path = Path(audio_path).absolute().as_posix()
 
+    # Creat temporary video file
+    temp_video_path = str(output_dir / f"{video_file_path.stem}_temp.mp4")
+    loop_video(audio_path, video_path, temp_video_path)
+
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     # Set the output path for the processed video
     output_path = str(output_dir / f"{video_file_path.stem}_{current_time}.mp4")  # Change the filename as needed
@@ -55,7 +60,7 @@ def process_video(
     )
 
     # Parse the arguments
-    args = create_args(video_path, audio_path, output_path, inference_steps, guidance_scale, seed)
+    args = create_args(temp_video_path, audio_path, output_path, inference_steps, guidance_scale, seed)
 
     try:
         inference.main(

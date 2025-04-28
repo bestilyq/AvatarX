@@ -38,6 +38,8 @@ from latentsync.whisper.audio2feature import Audio2Feature
 import tqdm
 import soundfile as sf
 
+import tempfile
+
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 
@@ -402,7 +404,7 @@ class LipsyncPipelineOptimized(DiffusionPipeline):
 
         # 创建临时视频文件存储处理后的帧
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        temp_video_path = os.path.join(os.path.dirname(video_out_path), "temp.mp4")
+        temp_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
         out = cv2.VideoWriter(temp_video_path, fourcc, video_fps, (frame_width, frame_height))
 
         # 读取指定帧数的视频

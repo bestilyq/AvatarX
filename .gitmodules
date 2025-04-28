@@ -2,3 +2,7 @@
 	path = submodules/LatentSync
 	url = https://github.com/bytedance/LatentSync.git
 	branch = main
+[submodule "submodules/F5-TTS"]
+	path = submodules/F5-TTS
+	url = https://github.com/SWivid/F5-TTS.git
+	branch = main

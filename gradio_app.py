@@ -4,6 +4,8 @@ from omegaconf import OmegaConf
 import argparse
 from datetime import datetime
 
+import torch
+
 import inference
 from util import loop_video
 
@@ -72,6 +74,8 @@ def process_video(
     except Exception as e:
         print(f"Error during processing: {str(e)}")
         raise gr.Error(f"Error during processing: {str(e)}")
+    finally:
+        torch.cuda.empty_cache()
 
 
 def create_args(
@@ -125,7 +129,7 @@ with gr.Blocks(title="AvatarX") as demo:
             <img src='https://img.shields.io/badge/arXiv-Paper-red'>
         </a>
     </div>
-    <h2 align="center">A digital human build with LatentSync and F5-TTS</h2>
+    <h2 align="center">A digital human built with LatentSync and F5-TTS</h2>
     <style> video { max-height: 500px; } </style>
     """
     )

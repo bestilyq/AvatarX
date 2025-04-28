@@ -1,4 +1,7 @@
+import math
 import ffmpeg
+import subprocess
+import os
 
 def get_duration(path):
     """获取文件的时长（秒）"""
@@ -11,31 +14,72 @@ def get_duration(path):
 
 def create_looped_video(video_path, target_duration, output_path):
     """创建循环视频（正放+倒放）以匹配音频时长"""
-    # 获取视频时长
-    video_duration = get_duration(video_path)
-    
-    # 计算需要循环的次数（正放+倒放算一次循环）
-    loops_needed = int(target_duration / (2 * video_duration)) + 1
-    
-    # 创建正放和倒放的视频流
-    stream = ffmpeg.input(video_path)
-    forward = stream
-    reverse = stream.filter('reverse')
-    
-    # 交替正放和倒放
-    concat_streams = []
-    for _ in range(loops_needed):
-        concat_streams.extend([forward, reverse])
-    
-    # 拼接视频流
-    concat = ffmpeg.concat(*concat_streams, v=1, a=0)
-    
-    # 裁剪到音频时长
-    concat = concat.filter('trim', duration=target_duration)
-    
-    # 输出临时循环视频
-    ffmpeg.output(concat, output_path).run(overwrite_output=True)
-    return output_path
+    try:
+        # 获取视频时长
+        video_duration = get_duration(video_path)
+        
+        # 计算需要循环的次数（正放+倒放算一次循环）
+        loops_needed = math.ceil(target_duration / (2 * video_duration))
+        
+        # 步骤 1：生成中间文件
+        file_dir = os.path.dirname(video_path)
+        file_name = os.path.basename(video_path)
+        file_base, file_ext = os.path.splitext(file_name)
+        forward_file = os.path.join(file_dir, f"{file_base}_forward{file_ext}")
+        reverse_file = os.path.join(file_dir, f"{file_base}_reverse{file_ext}")
+
+        # 生成正放视频
+        cmd_forward = [
+            'ffmpeg', '-i', video_path,
+            '-c:v', 'copy',
+            '-an',
+            '-y',
+            forward_file
+        ]
+        subprocess.run(cmd_forward, capture_output=True, text=True, check=True)
+
+        # 生成倒放视频
+        cmd_reverse = [
+            'ffmpeg', '-i', video_path,
+            '-vf', 'reverse',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-an',
+            '-y',
+            reverse_file
+        ]
+        subprocess.run(cmd_reverse, capture_output=True, text=True, check=True)
+
+        # 步骤 2：创建 concat 文本文件
+        concat_list_file = 'concat_list.txt'
+        with open(concat_list_file, 'w') as f:
+            for _ in range(loops_needed):
+                f.write(f"file '{forward_file}'\n")
+                f.write(f"file '{reverse_file}'\n")
+
+        # 步骤 3：拼接视频
+        cmd_concat = [
+            'ffmpeg', '-f', 'concat',
+            '-safe', '0',  # 允许非标准路径
+            '-i', concat_list_file,
+            '-c:v', 'copy',
+            '-an',
+            '-map_metadata', '-1',
+            '-y',
+            output_path
+        ]
+        subprocess.run(cmd_concat, capture_output=True, text=True, check=True)
+
+        # 步骤 4：清理临时文件
+        os.remove(forward_file)
+        os.remove(reverse_file)
+        os.remove(concat_list_file)
+
+        return output_path
+    except ffmpeg.Error as e:
+        print(f"An error occurred: {e.stderr.decode()}")
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
 
 def loop_video(audio_path, video_path, output_path):
     """视频较短则将视频循环以达到音频长度"""
@@ -64,7 +108,6 @@ def loop_video(audio_path, video_path, output_path):
         print(f"Unexpected error: {str(e)}")
 
 def main():
-    import os
     import argparse
     
     """解析命令行参数"""

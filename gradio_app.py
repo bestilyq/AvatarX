@@ -36,7 +36,7 @@ def process_video(
     seed,
 ):
     # Create the temp directory if it doesn't exist
-    output_dir = Path("./temp")
+    output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Convert paths to absolute Path objects and normalize them
@@ -44,9 +44,9 @@ def process_video(
     video_path = video_file_path.absolute().as_posix()
     audio_path = Path(audio_path).absolute().as_posix()
 
-    # Creat temporary video file
-    temp_video_path = video_file_path.with_stem(video_file_path.stem + "_temp").absolute().as_posix()
-    loop_video(audio_path, video_path, temp_video_path)
+    # Prepare video file
+    prepared_video_path = video_file_path.with_stem(video_file_path.stem + "_prepared").absolute().as_posix()
+    loop_video(audio_path, video_path, prepared_video_path)
 
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     # Set the output path for the processed video
@@ -62,7 +62,7 @@ def process_video(
     )
 
     # Parse the arguments
-    args = create_args(temp_video_path, audio_path, output_path, inference_steps, guidance_scale, seed)
+    args = create_args(prepared_video_path, audio_path, output_path, inference_steps, guidance_scale, seed)
 
     try:
         inference.main(

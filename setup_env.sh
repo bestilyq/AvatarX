@@ -31,17 +31,17 @@ if [[ "$(echo $CUDA_VERSION | cut -d'.' -f1)" -lt 12 ]]; then
         SED_INPLACE="sed -i"
     fi
     # 定义临时文件
-    TEMP_FILE=".requirements.txt"
-    # 复制requirements.txt到临时文件
-    cp requirements.txt "$TEMP_FILE"
+    TEMP_FILE=".pyproject.toml"
+    # 复制pyproject.toml到临时文件
+    cp pyproject.toml "$TEMP_FILE"
     # 修改临时文件中的onnxruntime-gpu版本
     $SED_INPLACE "s/onnxruntime-gpu==1.21.0/onnxruntime-gpu==1.18.0/" "$TEMP_FILE"
     # 使用临时文件安装依赖
-    pip install -r "$TEMP_FILE"
+    pip install -e "$TEMP_FILE"
     # 删除临时文件
     rm "$TEMP_FILE"
 else
-    pip install -r requirements.txt
+    pip install -e .
 fi
 
 # Download the checkpoints required for inference use hfd

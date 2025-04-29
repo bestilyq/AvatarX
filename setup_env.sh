@@ -1,14 +1,13 @@
 #!/bin/bash
 
 # Create a new conda environment
-conda create -y -n latentsync python=3.10.13
-conda activate latentsync
+conda create -y -n avatarx python=3.10.13
+conda activate avatarx
 
 # Install ffmpeg
 conda install -y -c conda-forge ffmpeg
 
-# Python dependencies
-#pip install -r requirements.txt
+# Upgrade pip
 python -m pip install --upgrade pip
 
 # OpenCV dependencies
@@ -34,7 +33,7 @@ if [[ "$(echo $CUDA_VERSION | cut -d'.' -f1)" -lt 12 ]]; then
     $SED_INPLACE "s/onnxruntime-gpu==1.21.0/onnxruntime-gpu==1.18.0/" "$TEMP_FILE"
 fi
 
-pip install -e .
+pip install -e . --extra-index-url https://download.pytorch.org/whl/cu121
 
 # Download the checkpoints required for inference use hfd
 if [ "$(id -u)" -eq 0 ]; then

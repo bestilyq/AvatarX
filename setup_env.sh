@@ -9,6 +9,7 @@ conda install -y -c conda-forge ffmpeg
 
 # Python dependencies
 #pip install -r requirements.txt
+python -m pip install --upgrade pip
 
 # OpenCV dependencies
 if [ "$(id -u)" -eq 0 ]; then

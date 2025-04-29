@@ -9,6 +9,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
+    "spaces",
     "gradio",
     "torch==2.7.0",
     "accelerate>=0.33.0",

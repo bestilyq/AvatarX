@@ -6,6 +6,7 @@ import tempfile
 
 import gradio as gr
 import soundfile as sf
+import torch
 import torchaudio
 from cached_path import cached_path
 
@@ -46,47 +47,10 @@ DEFAULT_TTS_MODEL_CFG = [
 
 
 # load models
-
-vocoder = load_vocoder()
-
-
 def load_f5tts():
     ckpt_path = str(cached_path(DEFAULT_TTS_MODEL_CFG[0]))
     F5TTS_model_cfg = json.loads(DEFAULT_TTS_MODEL_CFG[2])
     return load_model(DiT, F5TTS_model_cfg, ckpt_path)
-
-
-def load_e2tts():
-    ckpt_path = str(cached_path("hf://SWivid/E2-TTS/E2TTS_Base/model_1200000.safetensors"))
-    E2TTS_model_cfg = dict(dim=1024, depth=24, heads=16, ff_mult=4, text_mask_padding=False, pe_attn_head=1)
-    return load_model(UNetT, E2TTS_model_cfg, ckpt_path)
-
-
-F5TTS_ema_model = load_f5tts()
-E2TTS_ema_model = load_e2tts() if USING_SPACES else None
-
-
-@gpu_decorator
-def generate_response(messages, model, tokenizer):
-    """Generate response using Qwen"""
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-    )
-
-    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
-    generated_ids = model.generate(
-        **model_inputs,
-        max_new_tokens=512,
-        temperature=0.7,
-        top_p=0.95,
-    )
-
-    generated_ids = [
-        output_ids[len(input_ids) :] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-    ]
-    return tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
 
 @gpu_decorator
@@ -111,15 +75,8 @@ def infer(
 
     ref_audio, ref_text = preprocess_ref_audio_text(ref_audio_orig, ref_text, show_info=show_info)
 
-    if model == DEFAULT_TTS_MODEL:
-        ema_model = F5TTS_ema_model
-    elif model == "E2-TTS":
-        global E2TTS_ema_model
-        if E2TTS_ema_model is None:
-            show_info("Loading E2-TTS model...")
-            E2TTS_ema_model = load_e2tts()
-        ema_model = E2TTS_ema_model
-
+    vocoder = load_vocoder()
+    ema_model = load_f5tts()
     final_wave, final_sample_rate, combined_spectrogram = infer_process(
         ref_audio,
         ref_text,
@@ -202,17 +159,23 @@ with gr.Blocks() as app_tts:
         nfe_slider,
         speed_slider,
     ):
-        audio_out, spectrogram_path, ref_text_out = infer(
-            ref_audio_input,
-            ref_text_input,
-            gen_text_input,
-            tts_model_choice,
-            remove_silence,
-            cross_fade_duration=cross_fade_duration_slider,
-            nfe_step=nfe_slider,
-            speed=speed_slider,
-        )
-        return audio_out, spectrogram_path, ref_text_out
+        try:
+            audio_out, spectrogram_path, ref_text_out = infer(
+                ref_audio_input,
+                ref_text_input,
+                gen_text_input,
+                tts_model_choice,
+                remove_silence,
+                cross_fade_duration=cross_fade_duration_slider,
+                nfe_step=nfe_slider,
+                speed=speed_slider,
+            )
+            return audio_out, spectrogram_path, ref_text_out
+        except Exception as e:
+            print(f"Error during processing: {str(e)}")
+            raise gr.Error(f"Error during processing: {str(e)}")
+        finally:
+            torch.cuda.empty_cache()
 
     generate_btn.click(
         basic_tts,

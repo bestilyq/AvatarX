@@ -60,19 +60,32 @@ def load_f5tts():
 
 # 文本分段函数
 def split_text(text, max_len=150):
-    sentences = re.split(r'[。！？.!?]+', text)
-    sentences = [s.strip() for s in sentences if s.strip()]
+    pattern = r'([。！？.!?])'
+    parts = re.split(pattern, text)
+    sentences = []
+    current_text = ""
+    for i in range(0, len(parts), 2):
+        current_text += parts[i]
+        if i + 1 < len(parts):
+            current_text += parts[i + 1]
+            if current_text.strip():
+                sentences.append(current_text)
+            current_text = ""
+    if current_text.strip():
+        sentences.append(current_text)
+    
     segments = []
     current_segment = ""
     for sentence in sentences:
         if len(current_segment) + len(sentence) <= max_len:
-            current_segment += sentence + "。"
+            current_segment += sentence
         else:
             if current_segment:
                 segments.append(current_segment)
-            current_segment = sentence + "。"
+            current_segment = sentence
     if current_segment:
         segments.append(current_segment)
+    
     return segments
 
 # 合并音频函数

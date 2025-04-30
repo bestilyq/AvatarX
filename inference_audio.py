@@ -2,9 +2,9 @@
 # Above allows ruff to ignore E402: module level import not at top of file
 
 import json
-import os
 from pathlib import Path
 import re
+import shutil
 import tempfile
 
 import librosa
@@ -188,7 +188,12 @@ def infer2(
     final_audio = librosa.util.normalize(final_audio)
     # final_audio_path = Path(temp_dir, "output_long_final.wav").absolute().as_posix()
     # sf.write(final_audio_path, final_audio, sampling_rate)
-    os.remove(temp_dir)
+    try:
+        shutil.rmtree(temp_dir)
+    except FileNotFoundError:
+        print(f"{temp_dir} is not found.")
+    except PermissionError:
+        print("权限不足，无法删除文件夹。")
 
     final_wave = final_audio
     final_sample_rate = sampling_rate

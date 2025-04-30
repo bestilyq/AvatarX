@@ -6,7 +6,7 @@ from datetime import datetime
 
 import torch
 
-import inference
+import inference_video
 from util import loop_video
 
 SUBMODULES_PATH = Path("submodules")
@@ -65,7 +65,7 @@ def process_video(
     args = create_args(prepared_video_path, audio_path, output_path, inference_steps, guidance_scale, seed)
 
     try:
-        inference.main(
+        inference_video.main(
             config=config,
             args=args,
         )

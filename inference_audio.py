@@ -2,6 +2,7 @@
 # Above allows ruff to ignore E402: module level import not at top of file
 
 import json
+import os
 from pathlib import Path
 import re
 import tempfile
@@ -158,6 +159,7 @@ def infer2(
     audio_files = []
     spectrograms = []
     for i, text_segment in enumerate(segments):
+        print(f"生成第 {i+1} 段音频")
         with torch.no_grad():
             wave, sampling_rate, spectrogram = infer_process(
                 ref_audio,
@@ -175,7 +177,6 @@ def infer2(
         sf.write(temp_file, wave, sampling_rate)
         audio_files.append(temp_file)
         spectrograms.append(spectrogram)
-        print(f"生成第 {i+1} 段音频")
 
     # 合并音频
     merged_audio_path = Path(temp_dir, "output_long_crossfade.wav").absolute().as_posix()
@@ -185,8 +186,9 @@ def infer2(
     # 音量归一化
     final_audio, _ = librosa.load(merged_audio_path, sr=sampling_rate)
     final_audio = librosa.util.normalize(final_audio)
-    final_audio_path = Path(temp_dir, "output_long_final.wav").absolute().as_posix()
-    sf.write(final_audio_path, final_audio, sampling_rate)
+    # final_audio_path = Path(temp_dir, "output_long_final.wav").absolute().as_posix()
+    # sf.write(final_audio_path, final_audio, sampling_rate)
+    os.remove(temp_dir)
 
     final_wave = final_audio
     final_sample_rate = sampling_rate

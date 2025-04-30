@@ -9,6 +9,7 @@ checkpoints/
 temp/
 output/
 hfd.sh
+init_cloudstudio.sh
 
 # C extensions
 *.so

@@ -140,8 +140,50 @@ def create_args(video_path, audio_path, output_path, inference_steps, guidance_s
         ]
     )
 
+css = """
+.column-container {
+    height: 75vh !important;
+}
+"""
+
+js="""
+() => {
+    const column = document.querySelector('#audio-column');
+    const audio = document.querySelector('#audio-input');
+    const textbox = document.querySelector('#textbox-input');
+    const textarea = document.querySelector('#textbox-input textarea');
+
+    let currentElement = textarea;
+    while (currentElement && currentElement !== textbox) {
+        if (currentElement.tagName !== 'TEXTAREA') {
+            currentElement.style.display = 'flex';
+            currentElement.style.flexDirection = 'column';
+        }
+        currentElement.style.height = '100%';
+        currentElement = currentElement.parentElement;
+    }
+    
+    function adjustTextboxHeight() {
+        const columnHeight = column.offsetHeight;
+        const audioHeight = audio.offsetHeight;
+        const textboxHeight = columnHeight - audioHeight - 20;
+        textbox.style.height = `${textboxHeight}px`;
+    }
+
+    // 初始调整
+    adjustTextboxHeight();
+
+    // 监听音频控件高度变化
+    const observer = new ResizeObserver(adjustTextboxHeight);
+    observer.observe(audio);
+
+    // 清理观察者
+    return () => observer.disconnect();
+}
+"""
+
 # Create Gradio interface
-with gr.Blocks(title="AvatarX", fill_width=True) as app:
+with gr.Blocks(title="AvatarX", fill_width=True, css=css, js=js) as app:
     gr.Markdown(
     """
     <h1 align="center">AvatarX</h1>
@@ -160,7 +202,7 @@ with gr.Blocks(title="AvatarX", fill_width=True) as app:
     with gr.Row():            
         # Video processing column
         with gr.Column():
-            video_input = gr.Video(label="输入视频", height="74vh")
+            video_input = gr.Video(label="输入视频", height="75vh")
             
             with gr.Accordion("生成视频设置", open=False):
                 guidance_scale = gr.Slider(
@@ -185,8 +227,9 @@ with gr.Blocks(title="AvatarX", fill_width=True) as app:
 
         # Audio processing column
         with gr.Column():
-            ref_audio_input = gr.Audio(label="参考音频", type="filepath")
-            gen_text_input = gr.Textbox(label="输入文本", lines=30)
+            with gr.Column(elem_classes="column-container", elem_id="audio-column"):
+                ref_audio_input = gr.Audio(label="参考音频", type="filepath", elem_id="audio-input")
+                gen_text_input = gr.Textbox(label="输入文本", lines=30, elem_id="textbox-input")
             
             with gr.Accordion("生成音频设置", open=False):
                 ref_text_input = gr.Textbox(
@@ -224,7 +267,7 @@ with gr.Blocks(title="AvatarX", fill_width=True) as app:
             generated_audio = gr.Audio(label="合成的音频", type="filepath", visible=False)
 
         with gr.Column():
-            video_output = gr.Video(label="输出视频", height="74vh")
+            video_output = gr.Video(label="输出视频", height="75vh")
             generate_Video_btn = gr.Button("生成视频", variant="primary")
 
     # Configure queue

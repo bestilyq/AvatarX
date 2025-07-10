@@ -42,6 +42,9 @@ from f5_tts.infer.utils_infer import (
 )
 
 
+from numbers_converter import convert_numbers_to_chinese
+
+
 DEFAULT_TTS_MODEL = "F5-TTS_v1"
 tts_model_choice = DEFAULT_TTS_MODEL
 
@@ -161,6 +164,9 @@ def infer2(
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     ref_audio, ref_text = preprocess_ref_audio_text(ref_audio_orig, ref_text, show_info=show_info)
+
+    # 数字转换预处理
+    gen_text = convert_numbers_to_chinese(gen_text)
 
     vocoder = load_vocoder()
     ema_model = load_f5tts()

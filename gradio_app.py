@@ -35,8 +35,7 @@ def basic_tts(
     remove_silence,
     cross_fade_duration_slider,
     nfe_slider,
-    speed_slider,
-    progress=gr.Progress()
+    speed_slider
 ):
     if not ref_audio_input:
         gr.Warning("请提供参考音频。")
@@ -47,7 +46,7 @@ def basic_tts(
         return gr.update(), gr.update(), ref_text_input
     
     try:
-        progress(0.1, desc="开始生成音频...")
+        print("开始生成音频...")
         audio_out, spectrogram_path, ref_text_out = infer2(
             ref_audio_input,
             ref_text_input,
@@ -58,9 +57,9 @@ def basic_tts(
             nfe_step=nfe_slider,
             speed=speed_slider,
             show_info=gr.Info,
-            progress=progress
+            progress=gr.Progress()
         )
-        progress(1.0, desc="音频生成完成")
+        print("音频生成完成")
         print(f"音频已保存至: {audio_out}")
         return audio_out, ref_text_out
     except Exception as e:
@@ -76,8 +75,7 @@ def process_video(
     audio_path,
     guidance_scale,
     inference_steps,
-    seed,
-    progress=gr.Progress()
+    seed
 ):
     output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -103,10 +101,9 @@ def process_video(
     args = create_args(prepared_video_path, audio_path, output_path, inference_steps, guidance_scale, seed)
 
     try:
-        progress(0.4, desc="开始处理视频...")
+        print("开始处理视频...")
         inference_video_main(config=config, args=args)
-        progress(1.0, desc="视频处理完成")
-        print("视频处理完成。")
+        print("视频处理完成")
         return output_path
     except Exception as e:
         print(f"处理视频时出错: {str(e)}")
